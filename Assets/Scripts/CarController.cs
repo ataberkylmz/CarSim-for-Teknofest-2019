@@ -71,9 +71,9 @@ public class CarController : MonoBehaviour
 
         // Calculate the Km/h.
         // WARNING! -THIS APPROACH MIGH BE WRONG AS WE DO NOT KNOW THE WHEEL RADIUS' UNIT!
-        // IT IS ASSUMED TO BE IN MILLIMETER(MM) THEN CONVERTED TO CANTIMETER(CM) IN THE CALCULATION!
-        // TODO: Try using the back wheel as the front one turns and loses torque and jitters.
-        Debug.Log("Km/h: " + (w_frontDriver.rpm * w_frontDriver.radius * 100 * 0.001885));
-        Debug.Log("RPM: " + w_frontDriver.rpm);
+        // IT IS ASSUMED TO BE IN MILLIMETER(MM) THEN CONVERTED TO CANTIMETER(CM) IN THE CALCULATION!.
+        //Debug.Log("Km/h: " + (w_backDriver.rpm * w_backDriver.radius * 100 * 0.001885));
+        //Debug.Log("RPM: " + w_backDriver.rpm);
+        Debug.Log("Steering Angle: " + steeringAngle);
     }
-}
+}       
