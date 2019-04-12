@@ -74,6 +74,11 @@ public class CarController : MonoBehaviour
         // IT IS ASSUMED TO BE IN MILLIMETER(MM) THEN CONVERTED TO CANTIMETER(CM) IN THE CALCULATION!.
         //Debug.Log("Km/h: " + (w_backDriver.rpm * w_backDriver.radius * 100 * 0.001885));
         //Debug.Log("RPM: " + w_backDriver.rpm);
-        Debug.Log("Steering Angle: " + steeringAngle);
+        //Debug.Log("Steering Angle: " + steeringAngle);
+    }
+
+    public float getSteeringAngle()
+    {
+        return steeringAngle;
     }
 }       
