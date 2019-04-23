@@ -6,6 +6,7 @@ public class TrafficLightController : MonoBehaviour
 {
 
     public GameObject [] trafficLightR1, trafficLightR2;
+    private int [] state = new int[2];
     private float timer = 0f;
 
     // Update is called once per frame
@@ -18,6 +19,9 @@ public class TrafficLightController : MonoBehaviour
             {
                 turnGreen(trafficLightR1);
                 turnRed(trafficLightR2);
+                state[0] = 1;
+                state[1] = 0;
+
             }
             else if (timer < 20)
             {
@@ -28,6 +32,8 @@ public class TrafficLightController : MonoBehaviour
             {
                 turnRed(trafficLightR1);
                 turnGreen(trafficLightR2);
+                state[0] = 0;
+                state[1] = 1;
             }
                 
         }
@@ -55,7 +61,6 @@ public class TrafficLightController : MonoBehaviour
                     l.enabled = true;
                 else
                     l.enabled = false;
-                    
             }
         }
     }
@@ -75,7 +80,6 @@ public class TrafficLightController : MonoBehaviour
                     l.enabled = true;
                 else
                     l.enabled = false;
-
             }
         }
     }
@@ -96,8 +100,12 @@ public class TrafficLightController : MonoBehaviour
                     l.enabled = true;
                 else
                     l.enabled = false;
-
             }
         }
+    }
+
+    public int[] getState()
+    {
+        return state;
     }
 }

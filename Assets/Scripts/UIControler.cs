@@ -5,13 +5,23 @@ using UnityEngine.UI;
 
 public class UIControler : MonoBehaviour
 {
-    public GameObject steeringAngleField;
+    private CarController car;
+    private Text steeringAngleField;
+    private Text speedField;
     private float steeringAngle;
+    private float speed;
 
-    // Update is called once per frame
+    private void Start()
+    {
+        steeringAngleField = GameObject.Find("steeringAngleField").GetComponent<Text>();
+        speedField = GameObject.Find("speedField").GetComponent<Text>();
+        car = GameObject.FindGameObjectWithTag("Player").GetComponent<CarController>();
+    }
     void Update()
     {
-        steeringAngle = GameObject.Find("Car").GetComponent<CarController>().getSteeringAngle();
-        steeringAngleField.GetComponent<Text>().text = steeringAngle.ToString();
+        speed = car.getSpeed();
+        steeringAngle = car.getSteeringAngle();
+        steeringAngleField.text = steeringAngle.ToString();
+        speedField.text = speed.ToString();
     }
 }
