@@ -5,6 +5,7 @@ using UnityEngine;
 public class CarController : MonoBehaviour
 {
     private enum states { moving = 1, decide, stoped, parked };
+    private enum signs { Forward = 1, TurnRight, TurnLeft, Max20, Min30, D, P, NP };
 
     public WheelCollider w_frontDriver;
     public WheelCollider w_frontPassenger;
@@ -28,13 +29,14 @@ public class CarController : MonoBehaviour
     public bool autonomousMode = false;
     private GameObject sensors;
     private RadarSensorController radars;
-    private Camera cam;
-
+    
     public int carState = (int)states.stoped;
+    public int signState = 0;
+    public bool gotPassenger = false;
+    public bool signProcess = false;
 
     public void Start()
     {
-        cam = GameObject.Find("DashCam").GetComponent<Camera>();
         sensors = GameObject.Find("Sensors");
         radars = GameObject.Find("Radars").GetComponent<RadarSensorController>();
     }
@@ -127,9 +129,10 @@ public class CarController : MonoBehaviour
     public void AutonomousDrive()
     {
         currentSpeed = 2 * Mathf.PI * w_frontDriver.radius * w_frontDriver.rpm * 60 / 1000;
-        if (radars.hitFront.distance < 1.0f)
+        if (radars.isHitFront == true && radars.hitFront.distance < 1.0f)
             carState = (int)states.stoped;
-
+        else
+            carState = (int)states.moving;
         /* SEQUENCE
          * 1- Check front left & right radars' distances, if >15, stop. There must be a turn.
          *  1.1- Check light if there is one - else canMove = true.

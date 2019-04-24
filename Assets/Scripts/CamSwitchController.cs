@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class CamController : MonoBehaviour
+public class CamSwitchController : MonoBehaviour
 {
     public Camera MainCamera;
     public Camera DriverCam;
