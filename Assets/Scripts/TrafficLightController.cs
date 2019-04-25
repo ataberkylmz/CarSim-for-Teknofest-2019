@@ -4,10 +4,20 @@ using UnityEngine;
 
 public class TrafficLightController : MonoBehaviour
 {
-
+    public Renderer[] light1, light2;
+    public Camera cam;
     public GameObject [] trafficLightR1, trafficLightR2;
+    public CarController car;
     private int [] state = new int[2];
     private float timer = 0f;
+
+    private void Start()
+    {
+        light1 = GameObject.Find("TrafficLightUp1").GetComponentsInChildren<Renderer>();
+        light2 = GameObject.Find("TrafficLightUp2").GetComponentsInChildren<Renderer>();
+        car = GameObject.Find("Car").GetComponent<CarController>();
+        cam = GameObject.Find("DashCam").GetComponent<Camera>();
+    }
 
     // Update is called once per frame
     void Update()
@@ -41,8 +51,43 @@ public class TrafficLightController : MonoBehaviour
         {
             timer = 0;
         }
-            
 
+
+        if (light1[0].isVisible)
+        {
+            RaycastHit raycast;
+            Vector3 direction = cam.transform.position - light1[0].transform.position;
+
+
+            if (Physics.Raycast(light1[0].transform.position, direction, out raycast))
+            {
+                if (raycast.collider.name == "Car" && raycast.distance < 20.0f && Vector3.Angle(car.transform.position, direction) > (155.0f))
+                {
+                    Debug.DrawRay(light1[0].transform.position, direction, Color.yellow);
+                    //Debug.Log("L1 ANGLE: " + Vector3.Angle(car.transform.position, direction));
+                    car.lightStatus = state[0] == 1 ? true : false;
+                    car.lightDistance = raycast.distance;
+                }
+            }
+        }
+
+        if (light2[0].isVisible)
+        {
+            RaycastHit raycast;
+            Vector3 direction = cam.transform.position - light2[0].transform.position;
+
+
+            if (Physics.Raycast(light2[0].transform.position, direction, out raycast))
+            {
+                if (raycast.collider.name == "Car" && raycast.distance < 20.0f && Vector3.Angle(car.transform.position, direction) > (155.0f))
+                {
+                    Debug.DrawRay(light2[0].transform.position, direction, Color.yellow);
+                    //Debug.Log("L2 ANGLE: " + Vector3.Angle(car.transform.position, direction));
+                    car.lightStatus = state[1] == 1? true : false;
+                    car.lightDistance = raycast.distance;
+                }
+            }
+        }
     }
 
     private void turnRed(GameObject[] lights)

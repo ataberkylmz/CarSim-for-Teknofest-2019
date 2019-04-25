@@ -4,8 +4,10 @@ using UnityEngine;
 
 public class CarController : MonoBehaviour
 {
-    private enum states { moving = 1, decide, stoped, parked };
-    private enum signs { Forward = 1, TurnRight, TurnLeft, Max20, Min30, D, P, NP };
+    public enum states { moving = 1, turn, getPassenger, decide, stoped, parked };
+    public enum signs {none, forward, turnRight, turnLeft, max20, min30, d, p, np };
+
+    // Car dynamics variables
 
     public WheelCollider w_frontDriver;
     public WheelCollider w_frontPassenger;
@@ -17,6 +19,7 @@ public class CarController : MonoBehaviour
     public Transform t_backDriver;
     public Transform t_backPassenger;
 
+    // Drive variables
     private float horizontalInput;
     private float verticalInput;
     private bool handBrake;
@@ -26,15 +29,30 @@ public class CarController : MonoBehaviour
     private float currentSpeed;
     public float maxSpeed;
 
+    // Autonomous variables
     public bool autonomousMode = false;
     private GameObject sensors;
     private RadarSensorController radars;
-    
-    public int carState = (int)states.stoped;
-    public int signState = 0;
-    public bool gotPassenger = false;
-    public bool signProcess = false;
 
+    public bool crossProcess = false;
+    public int carState = (int)states.stoped;
+    // Turn Variables
+    public float turnTimer = 0.0f;
+    public bool willTurn = false;
+    public bool turnComplete = false;
+    public int turnDirection = (int)signs.none;
+    // Passenger Variables
+    public float passengerTimer = 0.0f;
+    public bool stopForPassenger = false;
+    public bool gotPassenger = false;
+
+        // Traffic Light variables (true = green, false = red)
+    public bool lightStatus = true;
+    public float lightDistance;
+
+        // Park Variables
+    
+    
     public void Start()
     {
         sensors = GameObject.Find("Sensors");
@@ -50,7 +68,6 @@ public class CarController : MonoBehaviour
 
         _wTransform.position = _pos;
         _wTransform.rotation = _quat;
-
     }
 
     private void FixedUpdate()
@@ -128,11 +145,16 @@ public class CarController : MonoBehaviour
 
     public void AutonomousDrive()
     {
+        
         currentSpeed = 2 * Mathf.PI * w_frontDriver.radius * w_frontDriver.rpm * 60 / 1000;
-        if (radars.isHitFront == true && radars.hitFront.distance < 1.0f)
-            carState = (int)states.stoped;
-        else
-            carState = (int)states.moving;
+
+        if(carState == (int)states.stoped)
+        {
+            if (radars.isHitFront == true && radars.hitFront.distance < 1.0f)
+                carState = (int)states.stoped;
+            else
+                carState = (int)states.moving;
+        }
         /* SEQUENCE
          * 1- Check front left & right radars' distances, if >15, stop. There must be a turn.
          *  1.1- Check light if there is one - else canMove = true.
@@ -145,21 +167,19 @@ public class CarController : MonoBehaviour
          **/
         
         if(carState != (int)states.decide)
+        {
+            checkLight();
             crossRoadCheck();
-        if(carState == (int)states.moving)
-            steerCalculation();
+        }
 
         switch (carState)
         {
             case (int)states.moving:
+                steerCalculation();
                 if (radars.isHitLeftFront && radars.isHitRightFront)
                 {
                     verticalInput = 0.3f;
-
-                    steeringAngle = maxSteeringAngle * horizontalInput;
-                    w_frontDriver.steerAngle = steeringAngle;
-                    w_frontPassenger.steerAngle = steeringAngle;
-
+                    
                     if (verticalInput != 0 && currentSpeed < maxSpeed)
                     {
 
@@ -169,12 +189,7 @@ public class CarController : MonoBehaviour
                         }
                         else
                         {
-                            w_frontDriver.motorTorque = torque * verticalInput;
-                            w_frontPassenger.motorTorque = torque * verticalInput;
-                            w_frontDriver.brakeTorque = 0;
-                            w_frontPassenger.brakeTorque = 0;
-                            w_backDriver.brakeTorque = 0;
-                            w_backPassenger.brakeTorque = 0;
+                            CarDrive();
                         }
                     }
                     else
@@ -182,8 +197,47 @@ public class CarController : MonoBehaviour
                         CarBrake();
                     }
                 }
+
+                break;
+            case (int)states.turn:
+                Debug.Log("Turn! " + (signs)turnDirection);
+                if (turnDirection == (int)signs.forward && turnTimer < 4.0f)
+                {
+                    verticalInput = 0.3f;
+                    horizontalInput = 0.0f;
+                    turnTimer += Time.deltaTime;
+                    CarDrive();
+                }
+                else if (turnDirection == (int)signs.turnRight && turnTimer < 4.0f)
+                {
+                    Debug.Log("Turn Right");
+                }
+                else if (turnDirection == (int)signs.turnLeft && turnTimer < 4.0f)
+                {
+                    Debug.Log("Turn Left");
+                }
+                else
+                {
+                    carState = (int)states.moving;
+                    turnComplete = true;
+                    crossProcess = false;
+                    turnTimer = 0.0f;
+                }
+                break;
+            case (int)states.getPassenger:
                 break;
             case (int)states.decide:
+                if (willTurn)
+                {
+                    turnComplete = false;
+                    willTurn = false;
+                    carState = (int)states.turn;
+                }//ELSI KALDIR IMPELEMTASYONU YAPINCA GEREK YOK HERALDE?
+                else if(stopForPassenger)
+                {
+                    carState = (int)states.getPassenger;
+                }
+                    
                 break;
             case (int)states.parked:
                 CarBrake();
@@ -200,10 +254,11 @@ public class CarController : MonoBehaviour
 
     private void crossRoadCheck()
     {
-        if (radars.hitRightFront.distance > 10.0f && radars.hitLeftFront.distance > 10.0f)
+        if (radars.hitRightFront.distance > 10.0f && radars.hitLeftFront.distance > 10.0f && crossProcess == false)
         {
             // Crossing change state to decide!
-            carState = 2;
+            carState = (int)states.decide;
+            crossProcess = true;
             Debug.Log("Cross Road Detected!");
             verticalInput = 0.0f;
             horizontalInput = 0.0f;
@@ -238,6 +293,39 @@ public class CarController : MonoBehaviour
         }
     }
 
+    private void steerCalculationForPassenger()
+    {
+        if (radars.hitLeftFront.distance > (radars.hitRightFront.distance + 0.3f))
+        {
+            //turn left
+            //Debug.Log("LEFT!");
+            if (horizontalInput < -1)
+                horizontalInput = -1.0f;
+            else
+                horizontalInput -= 0.1f;
+        }
+        else if (radars.hitRightFront.distance > (radars.hitLeftFront.distance + 0.3f))
+        {
+            //turn right
+            //Debug.Log("RIGHT!");
+            if (horizontalInput > 1)
+                horizontalInput = 1.0f;
+            else
+                horizontalInput += 0.1f;
+        }
+        else
+        {
+            //go straight
+            horizontalInput = 0;
+        }
+    }
+
+    private void checkLight()
+    {
+        if (lightStatus == false && lightDistance < 15.0f)
+            carState = (int)states.stoped;
+    }
+
     public void CarBrake()
     {
         w_frontDriver.motorTorque = 0;
@@ -246,6 +334,19 @@ public class CarController : MonoBehaviour
         w_frontPassenger.brakeTorque = torque;
         w_backDriver.brakeTorque = torque;
         w_backPassenger.brakeTorque = torque;
+    }
+
+    public void CarDrive()
+    {
+        steeringAngle = maxSteeringAngle * horizontalInput;
+        w_frontDriver.steerAngle = steeringAngle;
+        w_frontPassenger.steerAngle = steeringAngle;
+        w_frontDriver.motorTorque = torque * verticalInput;
+        w_frontPassenger.motorTorque = torque * verticalInput;
+        w_frontDriver.brakeTorque = 0;
+        w_frontPassenger.brakeTorque = 0;
+        w_backDriver.brakeTorque = 0;
+        w_backPassenger.brakeTorque = 0;
     }
 
     public float getSteeringAngle()

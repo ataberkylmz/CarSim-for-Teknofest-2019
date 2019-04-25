@@ -6,12 +6,12 @@ public class SignController : MonoBehaviour
 {
     public Camera cam;
     public Renderer[] renderer;
-    public GameObject car;
+    public CarController car;
     public string type;
 
     public void Start()
     {
-        car = GameObject.Find("Car");
+        car = GameObject.Find("Car").GetComponent<CarController>();
         cam = GameObject.Find("DashCam").GetComponent<Camera>();
         renderer = this.gameObject.GetComponentsInChildren<Renderer>();
     }
@@ -28,7 +28,39 @@ public class SignController : MonoBehaviour
                 if (raycast.collider.name == "Car" && raycast.distance < 20.0f && Vector3.Angle(car.transform.position, direction) > (90.0f+45.0f))
                 {
                     Debug.DrawRay(transform.position, direction, Color.red);
-                    Debug.Log("SIGN IS VISIBLE! Type: " + type + " DISTANCE: " + raycast.distance);
+                    //Debug.Log("SIGN IS VISIBLE! Type: " + type + " DISTANCE: " + raycast.distance);
+
+                    // Speed signs
+                    if (type == "min30")
+                        car.maxSpeed = 30;
+                    if (type == "max20")
+                        car.maxSpeed = 20;
+
+                    // Turns
+                    if(car.willTurn == false)
+                    {
+                        if(type == "turnRight")
+                        {
+                            car.willTurn = true;
+                            car.turnDirection = (int)CarController.signs.turnRight;
+                        }
+                        if (type == "turnLeft")
+                        {
+                            car.willTurn = true;
+                            car.turnDirection = (int)CarController.signs.turnLeft;
+                        }
+                        if (type == "forward")
+                        {
+                            car.willTurn = true;
+                            car.turnDirection = (int)CarController.signs.forward;
+                        }
+                    }
+
+                    // Passenger
+                    if(car.stopForPassenger == false)
+                        if (type == "d")
+                            car.stopForPassenger = true;
+
                 }
             }
         }
