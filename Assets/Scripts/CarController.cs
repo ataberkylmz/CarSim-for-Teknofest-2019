@@ -4,7 +4,7 @@ using UnityEngine;
 
 public class CarController : MonoBehaviour
 {
-    public enum states { moving = 1, turn, getPassenger, decide, stoped, parked };
+    public enum states { moving = 1, turn, getPassenger, decide, parking, stoped };
     public enum signs {none, forward, turnRight, turnLeft, max20, min30, d, p, np };
 
     // Car dynamics variables
@@ -40,12 +40,12 @@ public class CarController : MonoBehaviour
     public int carState = (int)states.stoped;
 
     public bool signProcessed = false;
-    // Turn Variables
+        // Turn Variables
     public float turnTimer = 0.0f;
     public bool willTurn = false;
     public bool turnComplete = false;
     public int turnDirection = (int)signs.none;
-    // Passenger Variables
+        // Passenger Variables
     public float passengerTimer = 0.0f;
     public bool stopForPassenger = false;
     public bool gotPassenger = false;
@@ -55,8 +55,10 @@ public class CarController : MonoBehaviour
     public bool lightStatus = true;
     public float lightDistance;
 
-        // Park Variables
-    
+    // Park Variables
+    public bool parking;
+    public GameObject parkSpot;
+    public float parkDistance;
     
     public void Start()
     {
@@ -178,6 +180,7 @@ public class CarController : MonoBehaviour
             checkLight();
             crossRoadCheck();
             checkForPassenger();
+            checkParking();
         }
 
         switch (carState)
@@ -206,25 +209,16 @@ public class CarController : MonoBehaviour
                     verticalInput = 0.3f;
                     
                     if (verticalInput != 0 && currentSpeed < maxSpeed)
-                    {
-
                         if (currentSpeed > 0 && verticalInput < 0)
-                        {
                             CarBrake();
-                        }
                         else
-                        {
                             CarDrive();
-                        }
-                    }
                     else
-                    {
                         CarBrake();
-                    }
                 }
-
                 break;
             case (int)states.turn:
+
                 Debug.Log("Turn! " + (signs)turnDirection);
                 if (turnDirection == (int)signs.forward && turnTimer < 4.0f)
                 {
@@ -275,6 +269,7 @@ public class CarController : MonoBehaviour
                 }
                 break;
             case (int)states.getPassenger:
+
                 maxSpeed = 10f;
                 if (distanceToPassenger < 8.0f)
                 {
@@ -319,6 +314,7 @@ public class CarController : MonoBehaviour
                 }
                 break;
             case (int)states.decide:
+
                 if (willTurn)
                 {
                     turnComplete = false;
@@ -326,10 +322,48 @@ public class CarController : MonoBehaviour
                     carState = (int)states.turn;
                 }
                 break;
-            case (int)states.parked:
-                CarBrake();
+            case (int)states.parking:
+                // radars.hitFront.distance
+                //Debug.Log("Parking!");
+
+                if(parkDistance > 50)
+                {
+                    oldMaxSpeed = 17.0f;
+                    maxSpeed = 17.0f;
+                }
+                else if(parkDistance > 12 && parkDistance <= 50)
+                {
+                    oldMaxSpeed = 8.0f;
+                    maxSpeed = 8.0f;
+                }
+                else if (parkDistance <= 12 && parkDistance > 0)
+                {
+                    oldMaxSpeed = 5.0f;
+                    maxSpeed = 5.0f;
+                }
+
+                steerCalculationForParking();
+                if (radars.hitFront.distance > 1.5f || !radars.isHitFront)
+                {
+                    verticalInput = 0.3f;
+
+                    if (verticalInput != 0 && currentSpeed < maxSpeed)
+                        if (currentSpeed > 0 && verticalInput < 0)
+                            CarBrake();
+                        else
+                            CarDrive();
+                    else
+                        CarBrake();
+                }
+                else
+                {
+                    CarBrake();
+                    carState = (int)states.stoped;
+                }
+
                 break;
             case (int)states.stoped:
+
                 CarBrake();
                 break;
             default:
@@ -462,10 +496,50 @@ public class CarController : MonoBehaviour
         }
     }
 
+    private void steerCalculationForParking()
+    {
+        if(radars.isHitFront == false)
+        {
+            horizontalInput = 0;
+        }
+        else
+        {
+            if (this.transform.position.x < parkSpot.transform.position.x + 0.1f)
+            {
+                //turn left
+                Debug.Log("Turning left! Car Pos: " + this.transform.position.x + " Park Pos: " + parkSpot.transform.position.x);
+                if (horizontalInput < -1)
+                    horizontalInput = -1.0f;
+                else
+                    horizontalInput -= 0.1f;
+            }
+            else if (this.transform.position.x > parkSpot.transform.position.x - 0.1f)
+            {
+                //turn right
+                Debug.Log("Turning right! Car Pos: " + this.transform.position.x + " Park Pos: " + parkSpot.transform.position.x);
+                if (horizontalInput > 1)
+                    horizontalInput = 1.0f;
+                else
+                    horizontalInput += 0.1f;
+            }
+            else
+            {
+                //go straight
+                horizontalInput = 0;
+            }
+        }
+    }
+
     private void checkLight()
     {
         if (lightStatus == false && lightDistance < 15.0f)
             carState = (int)states.stoped;
+    }
+
+    private void checkParking()
+    {
+        if (parking == true)
+            carState = (int)states.parking;
     }
 
     public void CarBrake()

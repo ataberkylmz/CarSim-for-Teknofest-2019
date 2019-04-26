@@ -71,6 +71,22 @@ public class SignController : MonoBehaviour
                             car.stopForPassenger = true;
                         }
 
+                    // Parking
+                    if(car.parking == false)
+                    {
+                        if (type == "finish")
+                            car.parking = true;
+                    }
+                    
+                }
+                else if(car.parking == true && raycast.collider.name == "Car" && raycast.distance < 60.0f)
+                {
+                    if (type == "p")
+                    {
+                        Debug.DrawRay(transform.position, direction, Color.green);
+                        car.parkSpot = this.gameObject;
+                        car.parkDistance = raycast.distance;
+                    }
                 }
             }
         }
