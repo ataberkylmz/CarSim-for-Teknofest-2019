@@ -1,5 +1,6 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
+using System;
 using UnityEngine;
 
 public class SignController : MonoBehaviour
@@ -57,9 +58,12 @@ public class SignController : MonoBehaviour
                     }
 
                     // Passenger
-                    if(car.stopForPassenger == false)
+                    car.distanceToPassenger = raycast.distance;
+                    if (car.stopForPassenger == false)
                         if (type == "d")
+                        {
                             car.stopForPassenger = true;
+                        }
 
                 }
             }

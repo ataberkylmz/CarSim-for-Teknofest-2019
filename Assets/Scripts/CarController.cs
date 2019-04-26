@@ -36,6 +36,8 @@ public class CarController : MonoBehaviour
 
     public bool crossProcess = false;
     public int carState = (int)states.stoped;
+
+    public bool signProcessed = false;
     // Turn Variables
     public float turnTimer = 0.0f;
     public bool willTurn = false;
@@ -45,6 +47,7 @@ public class CarController : MonoBehaviour
     public float passengerTimer = 0.0f;
     public bool stopForPassenger = false;
     public bool gotPassenger = false;
+    public float distanceToPassenger;
 
         // Traffic Light variables (true = green, false = red)
     public bool lightStatus = true;
@@ -55,6 +58,7 @@ public class CarController : MonoBehaviour
     
     public void Start()
     {
+        carState = (int)states.moving;
         sensors = GameObject.Find("Sensors");
         radars = GameObject.Find("Radars").GetComponent<RadarSensorController>();
     }
@@ -170,6 +174,7 @@ public class CarController : MonoBehaviour
         {
             checkLight();
             crossRoadCheck();
+            checkForPassenger();
         }
 
         switch (carState)
@@ -211,10 +216,34 @@ public class CarController : MonoBehaviour
                 else if (turnDirection == (int)signs.turnRight && turnTimer < 4.0f)
                 {
                     Debug.Log("Turn Right");
+                    turnTimer += Time.deltaTime;
+                    if (turnTimer < 1.5f || turnTimer > 3.0f)
+                    {
+                        verticalInput = 0.3f;
+                        horizontalInput = 0.0f;
+                    }
+                    else if (turnTimer >= 1.5f && turnTimer <= 3.0f)
+                    {
+                        verticalInput = 0.3f;
+                        horizontalInput = 1.0f;
+                    }
+                    CarDrive();
                 }
                 else if (turnDirection == (int)signs.turnLeft && turnTimer < 4.0f)
                 {
                     Debug.Log("Turn Left");
+                    turnTimer += Time.deltaTime;
+                    if (turnTimer < 1.5f || turnTimer > 3.0f)
+                    {
+                        verticalInput = 0.3f;
+                        horizontalInput = 0.0f;
+                    }
+                    else if (turnTimer >= 1.5f && turnTimer <= 3.0f)
+                    {
+                        verticalInput = 0.3f;
+                        horizontalInput = -1.0f;
+                    }
+                    CarDrive();
                 }
                 else
                 {
@@ -225,6 +254,49 @@ public class CarController : MonoBehaviour
                 }
                 break;
             case (int)states.getPassenger:
+                maxSpeed = 10f;
+                if (distanceToPassenger < 8.0f)
+                {
+                    steerCalculationForPassenger();
+                    verticalInput = 0.3f;
+                }
+                    
+
+                if (radars.isHitRightFront && radars.isHitRight && passengerTimer < 35.0f)
+                {
+                    if(radars.hitRight.distance > 2.5f)
+                    {
+                        Debug.Log("STOP FOR PASSENGER");
+                        if (verticalInput != 0 && currentSpeed < maxSpeed)
+                        {
+                                if (currentSpeed > 0 && verticalInput < 0)
+                            {
+                                CarBrake();
+                            }
+                            else
+                            {
+                                CarDrive();
+                            }
+                        }
+                        else
+                        {
+                            CarBrake();
+                        }
+                    }
+                    else
+                    {
+                        passengerTimer += Time.deltaTime;
+                        CarBrake();
+                    }
+                }
+                else
+                {
+                    gotPassenger = true;
+                    stopForPassenger = false;
+                    passengerTimer = 0.0f;
+                    maxSpeed = 30f;
+                    carState = (int)states.moving;
+                }
                 break;
             case (int)states.decide:
                 if (willTurn)
@@ -232,12 +304,7 @@ public class CarController : MonoBehaviour
                     turnComplete = false;
                     willTurn = false;
                     carState = (int)states.turn;
-                }//ELSI KALDIR IMPELEMTASYONU YAPINCA GEREK YOK HERALDE?
-                else if(stopForPassenger)
-                {
-                    carState = (int)states.getPassenger;
                 }
-                    
                 break;
             case (int)states.parked:
                 CarBrake();
@@ -250,6 +317,13 @@ public class CarController : MonoBehaviour
         }
 
        
+    }
+    private void checkForPassenger()
+    {
+        if (stopForPassenger)
+        {
+            carState = (int)states.getPassenger;
+        }
     }
 
     private void crossRoadCheck()
@@ -295,27 +369,26 @@ public class CarController : MonoBehaviour
 
     private void steerCalculationForPassenger()
     {
-        if (radars.hitLeftFront.distance > (radars.hitRightFront.distance + 0.3f))
-        {
-            //turn left
-            //Debug.Log("LEFT!");
-            if (horizontalInput < -1)
-                horizontalInput = -1.0f;
-            else
-                horizontalInput -= 0.1f;
-        }
-        else if (radars.hitRightFront.distance > (radars.hitLeftFront.distance + 0.3f))
+        Debug.Log("RF: " + radars.hitRightFront.distance + " R: " + radars.hitRight.distance);
+        if (radars.hitRightFront.distance > 3.3f || radars.hitRight.distance < 2.2f)
         {
             //turn right
-            //Debug.Log("RIGHT!");
             if (horizontalInput > 1)
                 horizontalInput = 1.0f;
             else
                 horizontalInput += 0.1f;
         }
+        else if(radars.hitRightFront.distance <= 3.5f || radars.hitRight.distance > 2.5f)
+        {
+            //turn left
+            if (horizontalInput < -1)
+                horizontalInput = -1.0f;
+            else
+                horizontalInput -= 0.1f;
+        }
         else
         {
-            //go straight
+            //straight
             horizontalInput = 0;
         }
     }

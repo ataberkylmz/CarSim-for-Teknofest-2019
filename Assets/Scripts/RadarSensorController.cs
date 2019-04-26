@@ -7,7 +7,7 @@ public class RadarSensorController : MonoBehaviour
     public GameObject frontRadar, backRadar, frontLeftRadar, frontRightRadar, leftRadar, rightRadar;
     public RaycastHit hitFront, hitBack, hitLeftFront, hitRightFront, hitLeft, hitRight;
     public bool isHitFront, isHitBack, isHitLeftFront, isHitRightFront, isHitLeft, isHitRight;
-    public float maxRange = 20f;
+    public float maxRange = 30f;
 
     void Update()
     {
