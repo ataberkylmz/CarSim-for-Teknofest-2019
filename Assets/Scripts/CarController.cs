@@ -574,4 +574,9 @@ public class CarController : MonoBehaviour
     {
         return currentSpeed;
     }
+
+    public void AutonomousOnOff()
+    {
+        autonomousMode = !autonomousMode;
+    }
 }       
