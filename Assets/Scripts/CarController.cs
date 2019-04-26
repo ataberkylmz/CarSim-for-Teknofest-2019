@@ -27,6 +27,8 @@ public class CarController : MonoBehaviour
     public float maxSteeringAngle = 30.0f;
     public float torque = 50.0f;
     private float currentSpeed;
+    private bool speedChanged = false;
+    public float oldMaxSpeed;
     public float maxSpeed;
 
     // Autonomous variables
@@ -58,6 +60,7 @@ public class CarController : MonoBehaviour
     
     public void Start()
     {
+        oldMaxSpeed = maxSpeed;
         carState = (int)states.moving;
         sensors = GameObject.Find("Sensors");
         radars = GameObject.Find("Radars").GetComponent<RadarSensorController>();
@@ -180,6 +183,23 @@ public class CarController : MonoBehaviour
         switch (carState)
         {
             case (int)states.moving:
+                
+                if (willTurn)
+                {
+                    if(speedChanged == false)
+                    {
+                        oldMaxSpeed = maxSpeed;
+                        speedChanged = true;
+                    }
+                    maxSpeed = 20f;
+                }
+                else
+                {
+                    maxSpeed = oldMaxSpeed;
+                    speedChanged = false;
+                }
+                    
+
                 steerCalculation();
                 if (radars.isHitLeftFront && radars.isHitRightFront)
                 {
@@ -250,6 +270,7 @@ public class CarController : MonoBehaviour
                     carState = (int)states.moving;
                     turnComplete = true;
                     crossProcess = false;
+                    willTurn = false;
                     turnTimer = 0.0f;
                 }
                 break;
@@ -261,7 +282,6 @@ public class CarController : MonoBehaviour
                     verticalInput = 0.3f;
                 }
                     
-
                 if (radars.isHitRightFront && radars.isHitRight && passengerTimer < 35.0f)
                 {
                     if(radars.hitRight.distance > 2.5f)
@@ -320,7 +340,18 @@ public class CarController : MonoBehaviour
     }
     private void checkForPassenger()
     {
-        if (stopForPassenger)
+        if (passengerTimer < 15 && gotPassenger == true)
+        {
+            passengerTimer += Time.deltaTime;
+        }
+        else if(passengerTimer > 15 && gotPassenger == true)
+        {
+            passengerTimer = 0;
+            gotPassenger = false;
+            stopForPassenger = false;
+        }
+            
+        if (stopForPassenger && gotPassenger == false)
         {
             carState = (int)states.getPassenger;
         }
@@ -328,7 +359,7 @@ public class CarController : MonoBehaviour
 
     private void crossRoadCheck()
     {
-        if (radars.hitRightFront.distance > 10.0f && radars.hitLeftFront.distance > 10.0f && crossProcess == false)
+        if (radars.hitRightFront.distance > 10.0f && radars.hitLeftFront.distance > 10.0f && crossProcess == false && stopForPassenger == false)
         {
             // Crossing change state to decide!
             carState = (int)states.decide;
@@ -337,6 +368,44 @@ public class CarController : MonoBehaviour
             verticalInput = 0.0f;
             horizontalInput = 0.0f;
             CarBrake();
+        }
+        else if (radars.hitRightFront.distance >= radars.hitLeftFront.distance + 10.0f && crossProcess == false && stopForPassenger == false)
+        {
+            if (willTurn == false)
+            {
+                horizontalInput = 1.0f;
+                verticalInput = 0.2f;
+                carState = (int)states.moving;
+                CarDrive();
+            }
+            else
+            {
+                carState = (int)states.decide;
+                crossProcess = true;
+                Debug.Log("Right T Road Detected!");
+                verticalInput = 0.0f;
+                horizontalInput = 0.0f;
+                CarBrake();
+            }
+        }
+        else if (radars.hitLeftFront.distance >= radars.hitRightFront.distance + 10.0f && crossProcess == false && stopForPassenger == false)
+        {
+            if(willTurn == false)
+            {
+                horizontalInput = -1.0f;
+                verticalInput = 0.2f;
+                carState = (int)states.moving;
+                CarDrive();
+            }
+            else
+            {
+                carState = (int)states.decide;
+                crossProcess = true;
+                Debug.Log("Left T Road Detected!");
+                verticalInput = 0.0f;
+                horizontalInput = 0.0f;
+                CarBrake();
+            }
         }
     }
 

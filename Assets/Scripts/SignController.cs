@@ -33,9 +33,15 @@ public class SignController : MonoBehaviour
 
                     // Speed signs
                     if (type == "min30")
+                    {
                         car.maxSpeed = 30;
+                        car.oldMaxSpeed = 30;
+                    }
                     if (type == "max20")
+                    {
                         car.maxSpeed = 20;
+                        car.oldMaxSpeed = 20;
+                    }
 
                     // Turns
                     if(car.willTurn == false)
